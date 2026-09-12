@@ -75,6 +75,11 @@ class TuyaCustomLockEntity(LockEntity):
         self._attr_is_locked = True
         self._attr_icon = "mdi:lock"
 
+    @property
+    def icon(self):
+        """Return the icon based on lock state."""
+        return "mdi:lock" if self._attr_is_locked else "mdi:lock-open"
+
     async def _async_get_access_token(self, session):
         """Fetch Access Token asynchronously."""
         t = str(int(time.time() * 1000))
