@@ -172,4 +172,3 @@ class TuyaDoorLockEntity(LockEntity):
         _LOGGER.info("Setting door state to locked.")
         self._attr_is_locked = True
         self.async_write_ha_state()
-        
