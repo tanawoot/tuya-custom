@@ -1,6 +1,6 @@
 {
   "domain": "tuya_custom",
-  "name": "Tuya Cloud Custom",
+  "name": "Tuya Custom",
   "codeowners": ["@tanawoot"],
   "config_flow": true,
   "dependencies": [],
