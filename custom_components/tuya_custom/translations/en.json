@@ -1,0 +1,16 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Tuya Cloud Door Lock Setup",
+        "description": "Enter your Tuya Developer API credentials.",
+        "data": {
+          "client_id": "Client ID (Access ID)",
+          "client_secret": "Client Secret (Access Secret)",
+          "device_id": "Device ID",
+          "endpoint": "API Endpoint (e.g. https://openapi.tuyaeu.com)"
+        }
+      }
+    }
+  }
+}
