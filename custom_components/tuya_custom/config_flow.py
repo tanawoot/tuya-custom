@@ -1,3 +1,4 @@
+"""Config flow for Tuya Custom integration."""
 import voluptuous as vol
 from homeassistant import config_entries
 from homeassistant.helpers.selector import (
@@ -15,7 +16,6 @@ from .const import (
     DEFAULT_ENDPOINT,
 )
 
-# รายชื่อ Data Center Endpoints ของ Tuya
 ENDPOINTS = [
     {"label": "Western America (us)", "value": "https://openapi.tuyaus.com"},
     {"label": "Eastern America (ue)", "value": "https://openapi-ueaz.tuyaus.com"},
@@ -37,3 +37,30 @@ DATA_SCHEMA = vol.Schema(
         vol.Required(CONF_DEVICE_ID): str,
     }
 )
+
+
+class TuyaCustomConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
+    """Handle a config flow for Tuya Custom."""
+
+    VERSION = 1
+
+    async def async_step_user(self, user_input=None):
+        """Handle the initial step."""
+        errors = {}
+
+        if user_input is not None:
+            await self.async_set_unique_id(user_input[CONF_DEVICE_ID])
+            self._abort_if_unique_id_configured()
+
+            return self.async_create_entry(
+                title=f"Tuya Lock ({user_input[CONF_DEVICE_ID][-4:]})",
+                data=user_input,
+            )
+
+        return self.async_show_form(
+            step_id="user",
+            data_schema=DATA_SCHEMA,
+            errors=errors,
+        )
+
+
