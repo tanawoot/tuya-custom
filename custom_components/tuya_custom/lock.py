@@ -72,6 +72,9 @@ class TuyaCustomLockEntity(LockEntity):
         self._attr_name = f"Door Lock ({self._device_id[-4:]})"
         self._attr_unique_id = f"tuya_custom_lock_{self._device_id}"
         self._attr_is_locked = True
+        
+        # ใส่ Icon ตรงนี้ (ใช้ Material Design Icons - mdi)
+        self._attr_icon = "mdi:lock"
 
     async def _async_get_access_token(self, session):
         """Fetch Access Token asynchronously."""
