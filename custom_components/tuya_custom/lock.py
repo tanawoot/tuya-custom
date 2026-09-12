@@ -1,4 +1,5 @@
 """Lock platform for Tuya Custom integration."""
+import asyncio
 import hashlib
 import hmac
 import json
@@ -122,7 +123,7 @@ class TuyaCustomLockEntity(LockEntity):
                 return await response.json()
 
     async def async_unlock(self, **kwargs) -> None:
-        """Unlock the door matching unlock_door script."""
+        """Unlock the door and auto reset state back to locked."""
         _LOGGER.info("Starting Tuya unlock sequence...")
         session = async_get_clientsession(self.hass)
 
@@ -150,7 +151,14 @@ class TuyaCustomLockEntity(LockEntity):
 
             if unlock_res.get("success"):
                 _LOGGER.info("ปลดล็อกประตูเรียบร้อยแล้วค่ะพี่!")
+                
+                # 1. เปลี่ยนสถานะเป็น Unlocked บน UI ให้รู้ว่าปลดล็อกสำเร็จแล้ว
                 self._attr_is_locked = False
+                self.async_write_ha_state()
+
+                # 2. รอ 5 วินาที แล้วรีเซ็ตสถานะกลับมาเป็น Locked (ปุ่มล็อก) เหมือนเดิม
+                await asyncio.sleep(5)
+                self._attr_is_locked = True
                 self.async_write_ha_state()
             else:
                 _LOGGER.error("ปลดล็อกไม่สำเร็จ: %s%s", unlock_res, _error_hint(unlock_res))
@@ -159,6 +167,6 @@ class TuyaCustomLockEntity(LockEntity):
             _LOGGER.error("Error occurred during unlock: %s", err)
 
     async def async_lock(self, **kwargs) -> None:
-        """Reset lock state."""
+        """Reset lock state manually."""
         self._attr_is_locked = True
         self.async_write_ha_state()
