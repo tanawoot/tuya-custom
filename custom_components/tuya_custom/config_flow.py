@@ -53,7 +53,7 @@ class TuyaCustomConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             self._abort_if_unique_id_configured()
 
             return self.async_create_entry(
-                title=f"Tuya Lock ({user_input[CONF_DEVICE_ID][-4:]})",
+                title=f"Lock",
                 data=user_input,
             )
 

@@ -68,10 +68,10 @@ class TuyaCustomLockEntity(LockEntity):
         self._client_secret = config[CONF_CLIENT_SECRET]
         self._endpoint = config[CONF_ENDPOINT].rstrip("/")
         self._device_id = config[CONF_DEVICE_ID]
-        self._unlock_duration = 10  # Unlock duration in seconds
+        self._unlock_duration = 5  # Duration in seconds to show unlocked state on UI
 
         self._attr_name = "Door Lock"
-        self._attr_unique_id = f"tuya_custom_lock_{self._device_id}"
+        self._attr_unique_id = f"tuya_lock_{self._device_id}"
         self._attr_is_locked = True
         self._attr_icon = "mdi:lock"
 
@@ -124,30 +124,14 @@ class TuyaCustomLockEntity(LockEntity):
             async with session.get(url, headers=headers) as response:
                 return await response.json()
 
-    async def _async_send_device_commands(self, session, token, commands):
-        """Send direct device control commands via Tuya DP."""
-        path = f"/v1.0/devices/{self._device_id}/commands"
-        payload = {"commands": commands}
-        return await self._async_send_tuya_request(
-            session, "POST", path, body_dict=payload, token=token
-        )
-
     async def async_unlock(self, **kwargs) -> None:
-        """Unlock the door and temporarily disable auto lock for the specified duration."""
-        _LOGGER.info("Executing hold-open unlock sequence for %s seconds...", self._unlock_duration)
+        """Unlock the door via password-free API and reset UI state after duration."""
         session = async_get_clientsession(self.hass)
 
         try:
             token = await self._async_get_access_token(session)
 
-            # 1. Disable Auto Lock DP commands to keep physical lock open
-            disable_autolock_cmd = [
-                {"code": "automatic_lock", "value": False},
-                {"code": "auto_lock", "value": False},
-            ]
-            await self._async_send_device_commands(session, token, disable_autolock_cmd)
-
-            # 2. Request password ticket
+            # 1. Request password ticket
             ticket_path = f"/v1.0/devices/{self._device_id}/door-lock/password-ticket"
             ticket_res = await self._async_send_tuya_request(session, "POST", ticket_path, token=token)
 
@@ -157,7 +141,7 @@ class TuyaCustomLockEntity(LockEntity):
 
             ticket_id = ticket_res["result"]["ticket_id"]
 
-            # 3. Send password-free open door request
+            # 2. Send password-free open door request
             unlock_path = f"/v1.0/devices/{self._device_id}/door-lock/password-free/open-door"
             payload = {"ticket_id": ticket_id}
             unlock_res = await self._async_send_tuya_request(
@@ -165,22 +149,12 @@ class TuyaCustomLockEntity(LockEntity):
             )
 
             if unlock_res.get("success"):
-                _LOGGER.info("Door unlocked successfully. Entering hold-open period.")
+                _LOGGER.info("Door unlocked successfully.")
                 self._attr_is_locked = False
                 self.async_write_ha_state()
 
-                # 4. Wait for the specified duration without looping API calls
+                # 3. Wait before resetting UI state back to locked
                 await asyncio.sleep(self._unlock_duration)
-
-                # 5. Restore Auto Lock and trigger physical lock command
-                _LOGGER.info("Hold-open time expired. Restoring Auto Lock and relocking.")
-                enable_autolock_cmd = [
-                    {"code": "automatic_lock", "value": True},
-                    {"code": "auto_lock", "value": True},
-                    {"code": "lock", "value": True},
-                ]
-                await self._async_send_device_commands(session, token, enable_autolock_cmd)
-
             else:
                 _LOGGER.error("Failed to unlock door: %s%s", unlock_res, _error_hint(unlock_res))
 
@@ -192,20 +166,6 @@ class TuyaCustomLockEntity(LockEntity):
             self.async_write_ha_state()
 
     async def async_lock(self, **kwargs) -> None:
-        """Manually lock the door and ensure Auto Lock is enabled."""
-        session = async_get_clientsession(self.hass)
-        try:
-            token = await self._async_get_access_token(session)
-
-            # Re-enable Auto Lock and execute lock command
-            enable_autolock_cmd = [
-                {"code": "automatic_lock", "value": True},
-                {"code": "auto_lock", "value": True},
-                {"code": "lock", "value": True},
-            ]
-            await self._async_send_device_commands(session, token, enable_autolock_cmd)
-        except Exception as err:
-            _LOGGER.error("Error during manual lock execution: %s", err)
-
+        """Manually reset UI state to locked."""
         self._attr_is_locked = True
         self.async_write_ha_state()
