@@ -1,11 +1,11 @@
-"""Button platform for Tuya Cloud Door Lock integration."""
+"""Lock platform for Tuya Cloud Door Lock integration."""
 import hashlib
 import hmac
 import json
 import logging
 import time
 
-from homeassistant.components.button import ButtonEntity
+from homeassistant.components.lock import LockEntity
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
@@ -46,16 +46,16 @@ async def async_setup_entry(
     entry: ConfigEntry,
     async_add_entities: AddEntitiesCallback,
 ) -> None:
-    """Set up the Tuya Door Lock button entity from config entry."""
+    """Set up the Tuya Door Lock entity from config entry."""
     config = entry.data
-    async_add_entities([TuyaUnlockButton(hass, entry, config)], True)
+    async_add_entities([TuyaDoorLockEntity(hass, entry, config)], True)
 
 
-class TuyaUnlockButton(ButtonEntity):
-    """Representation of a Tuya Door Lock Unlock Button."""
+class TuyaDoorLockEntity(LockEntity):
+    """Representation of a Tuya Door Lock Entity."""
 
     def __init__(self, hass: HomeAssistant, entry: ConfigEntry, config: dict):
-        """Initialize the button entity."""
+        """Initialize the lock entity."""
         self.hass = hass
         self._entry = entry
         self._client_id = config[CONF_CLIENT_ID]
@@ -63,9 +63,9 @@ class TuyaUnlockButton(ButtonEntity):
         self._endpoint = config[CONF_ENDPOINT].rstrip("/")
         self._device_id = config[CONF_DEVICE_ID]
 
-        self._attr_name = f"Unlock Door ({self._device_id[-4:]})"
-        self._attr_unique_id = f"tuya_unlock_{self._device_id}"
-        self._attr_icon = "mdi:door-open"
+        self._attr_name = f"Door Lock ({self._device_id[-4:]})"
+        self._attr_unique_id = f"tuya_lock_{self._device_id}"
+        self._attr_is_locked = True  # Default state set to locked
 
     def _get_error_hint(self, res: dict) -> str:
         """Get error hint for Tuya API response."""
@@ -122,8 +122,8 @@ class TuyaUnlockButton(ButtonEntity):
                 return res["result"]["access_token"]
             raise Exception(f"Failed to get Tuya token: {res}{self._get_error_hint(res)}")
 
-    async def async_press(self) -> None:
-        """Handle the button press event."""
+    async def async_unlock(self, **kwargs) -> None:
+        """Unlock the door via Tuya Cloud API."""
         _LOGGER.info("Triggering Tuya Door Lock Unlock action...")
         session = async_get_clientsession(self.hass)
 
@@ -143,7 +143,6 @@ class TuyaUnlockButton(ButtonEntity):
                 return
 
             ticket_id = ticket_res["result"]["ticket_id"]
-            _LOGGER.debug("Obtained Ticket ID: %s", ticket_id)
 
             # Step B: Password-free remote unlock
             unlock_path = f"/v1.0/devices/{self._device_id}/door-lock/password-free/open-door"
@@ -155,6 +154,9 @@ class TuyaUnlockButton(ButtonEntity):
 
             if unlock_res.get("success"):
                 _LOGGER.info("Successfully unlocked Tuya Door Lock!")
+                # Mark status as unlocked briefly
+                self._attr_is_locked = False
+                self.async_write_ha_state()
             else:
                 _LOGGER.error(
                     "Failed to unlock door: %s%s",
@@ -164,3 +166,10 @@ class TuyaUnlockButton(ButtonEntity):
 
         except Exception as err:
             _LOGGER.error("Error executing Tuya unlock action: %s", err)
+
+    async def async_lock(self, **kwargs) -> None:
+        """Lock the door (Set status back to locked manually or auto-relock)."""
+        _LOGGER.info("Setting door state to locked.")
+        self._attr_is_locked = True
+        self.async_write_ha_state()
+        

@@ -1,4 +1,4 @@
-"""Tuya Cloud Door Lock Integration for Home Assistant."""
+"""Tuya Cloud Custom Integration for Home Assistant."""
 import logging
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
@@ -7,11 +7,12 @@ from homeassistant.const import Platform
 from .const import DOMAIN
 
 _LOGGER = logging.getLogger(__name__)
-PLATFORMS: list[Platform] = [Platform.BUTTON]
+# Change platform to LOCK
+PLATFORMS: list[Platform] = [Platform.LOCK]
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
-    """Set up Tuya Cloud Door Lock from a config entry."""
+    """Set up Tuya Cloud Custom from a config entry."""
     hass.data.setdefault(DOMAIN, {})
     hass.data[DOMAIN][entry.entry_id] = entry.data
 
