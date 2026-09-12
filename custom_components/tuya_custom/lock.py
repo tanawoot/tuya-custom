@@ -1,4 +1,4 @@
-"""Lock platform for Tuya Cloud Door Lock integration."""
+"""Lock platform for Tuya Custom integration."""
 import hashlib
 import hmac
 import json
@@ -24,12 +24,12 @@ _LOGGER = logging.getLogger(__name__)
 
 
 def generate_sign(client_id, client_secret, access_token, t, method, path, body=""):
-    """Calculate Tuya Open API v2 signature."""
+    """Calculate Tuya Open API v2 signature matching script logic."""
     content_sha256 = hashlib.sha256(body.encode("utf-8")).hexdigest()
     string_to_sign = f"{method}\n{content_sha256}\n\n{path}"
     sign_str = client_id + (access_token if access_token else "") + t + string_to_sign
-    
-    sign = (
+
+    return (
         hmac.new(
             client_secret.encode("utf-8"),
             sign_str.encode("utf-8"),
@@ -38,7 +38,12 @@ def generate_sign(client_id, client_secret, access_token, t, method, path, body=
         .hexdigest()
         .upper()
     )
-    return sign
+
+
+def _error_hint(res):
+    """Retrieve hint message for known Tuya API error codes."""
+    hint = TUYA_ERROR_HINTS.get(res.get("code"))
+    return f" | Hint: {hint}" if hint else ""
 
 
 async def async_setup_entry(
@@ -46,13 +51,13 @@ async def async_setup_entry(
     entry: ConfigEntry,
     async_add_entities: AddEntitiesCallback,
 ) -> None:
-    """Set up the Tuya Door Lock entity from config entry."""
+    """Set up the Tuya Door Lock entity."""
     config = entry.data
-    async_add_entities([TuyaDoorLockEntity(hass, entry, config)], True)
+    async_add_entities([TuyaCustomLockEntity(hass, entry, config)], True)
 
 
-class TuyaDoorLockEntity(LockEntity):
-    """Representation of a Tuya Door Lock Entity."""
+class TuyaCustomLockEntity(LockEntity):
+    """Representation of Tuya Custom Lock Entity."""
 
     def __init__(self, hass: HomeAssistant, entry: ConfigEntry, config: dict):
         """Initialize the lock entity."""
@@ -64,17 +69,31 @@ class TuyaDoorLockEntity(LockEntity):
         self._device_id = config[CONF_DEVICE_ID]
 
         self._attr_name = f"Door Lock ({self._device_id[-4:]})"
-        self._attr_unique_id = f"tuya_lock_{self._device_id}"
-        self._attr_is_locked = True  # Default state set to locked
+        self._attr_unique_id = f"tuya_custom_lock_{self._device_id}"
+        self._attr_is_locked = True
 
-    def _get_error_hint(self, res: dict) -> str:
-        """Get error hint for Tuya API response."""
-        code = res.get("code")
-        hint = TUYA_ERROR_HINTS.get(code)
-        return f" | Hint: {hint}" if hint else ""
+    async def _async_get_access_token(self, session):
+        """Fetch Access Token asynchronously."""
+        t = str(int(time.time() * 1000))
+        path = "/v1.0/token?grant_type=1"
+        sign = generate_sign(self._client_id, self._client_secret, "", t, "GET", path)
+
+        headers = {
+            "client_id": self._client_id,
+            "sign": sign,
+            "t": t,
+            "sign_method": "HMAC-SHA256",
+        }
+
+        url = self._endpoint + path
+        async with session.get(url, headers=headers) as response:
+            res = await response.json()
+            if res.get("success"):
+                return res["result"]["access_token"]
+            raise Exception(f"Failed to get token: {res}{_error_hint(res)}")
 
     async def _async_send_tuya_request(self, session, method, path, body_dict=None, token=None):
-        """Send an authenticated HTTP request using Home Assistant aiohttp session."""
+        """Send authenticated HTTP request matching script logic."""
         if not token:
             token = await self._async_get_access_token(session)
 
@@ -102,29 +121,9 @@ class TuyaDoorLockEntity(LockEntity):
             async with session.get(url, headers=headers) as response:
                 return await response.json()
 
-    async def _async_get_access_token(self, session):
-        """Fetch Access Token asynchronously."""
-        t = str(int(time.time() * 1000))
-        path = "/v1.0/token?grant_type=1"
-        sign = generate_sign(self._client_id, self._client_secret, "", t, "GET", path)
-
-        headers = {
-            "client_id": self._client_id,
-            "sign": sign,
-            "t": t,
-            "sign_method": "HMAC-SHA256",
-        }
-
-        url = self._endpoint + path
-        async with session.get(url, headers=headers) as response:
-            res = await response.json()
-            if res.get("success"):
-                return res["result"]["access_token"]
-            raise Exception(f"Failed to get Tuya token: {res}{self._get_error_hint(res)}")
-
     async def async_unlock(self, **kwargs) -> None:
-        """Unlock the door via Tuya Cloud API."""
-        _LOGGER.info("Triggering Tuya Door Lock Unlock action...")
+        """Unlock the door matching unlock_door script."""
+        _LOGGER.info("Starting Tuya unlock sequence...")
         session = async_get_clientsession(self.hass)
 
         try:
@@ -135,14 +134,11 @@ class TuyaDoorLockEntity(LockEntity):
             ticket_res = await self._async_send_tuya_request(session, "POST", ticket_path, token=token)
 
             if not ticket_res.get("success"):
-                _LOGGER.error(
-                    "Failed to obtain ticket: %s%s",
-                    ticket_res,
-                    self._get_error_hint(ticket_res),
-                )
+                _LOGGER.error("Failed to obtain ticket: %s%s", ticket_res, _error_hint(ticket_res))
                 return
 
             ticket_id = ticket_res["result"]["ticket_id"]
+            _LOGGER.info("Ticket ID obtained: %s", ticket_id)
 
             # Step B: Password-free remote unlock
             unlock_path = f"/v1.0/devices/{self._device_id}/door-lock/password-free/open-door"
@@ -153,22 +149,16 @@ class TuyaDoorLockEntity(LockEntity):
             )
 
             if unlock_res.get("success"):
-                _LOGGER.info("Successfully unlocked Tuya Door Lock!")
-                # Mark status as unlocked briefly
+                _LOGGER.info("ปลดล็อกประตูเรียบร้อยแล้วค่ะพี่!")
                 self._attr_is_locked = False
                 self.async_write_ha_state()
             else:
-                _LOGGER.error(
-                    "Failed to unlock door: %s%s",
-                    unlock_res,
-                    self._get_error_hint(unlock_res),
-                )
+                _LOGGER.error("ปลดล็อกไม่สำเร็จ: %s%s", unlock_res, _error_hint(unlock_res))
 
         except Exception as err:
-            _LOGGER.error("Error executing Tuya unlock action: %s", err)
+            _LOGGER.error("Error occurred during unlock: %s", err)
 
     async def async_lock(self, **kwargs) -> None:
-        """Lock the door (Set status back to locked manually or auto-relock)."""
-        _LOGGER.info("Setting door state to locked.")
+        """Reset lock state."""
         self._attr_is_locked = True
         self.async_write_ha_state()
