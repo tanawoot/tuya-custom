@@ -68,12 +68,12 @@ class TuyaCustomLockEntity(LockEntity):
         self._client_secret = config[CONF_CLIENT_SECRET]
         self._endpoint = config[CONF_ENDPOINT].rstrip("/")
         self._device_id = config[CONF_DEVICE_ID]
-        self._unlock_duration = 10
+        self._unlock_duration = 10 # Unlock duration in seconds
 
-        self._attr_name = f"Door Lock ({self._device_id[-4:]})"
+        self._attr_name = "Door Lock"
         self._attr_unique_id = f"tuya_custom_lock_{self._device_id}"
         self._attr_is_locked = True
-        self._attr_icon = "mdi:door-lock"
+        self._attr_icon = "mdi:lock"
 
     async def _async_get_access_token(self, session):
         """Fetch Access Token asynchronously."""
