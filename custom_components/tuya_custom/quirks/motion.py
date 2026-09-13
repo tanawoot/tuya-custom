@@ -3,7 +3,7 @@ import math
 
 from zigpy.profiles import zha
 from zigpy.quirks import CustomDevice
-from zhaquirks.tuya import EnchantDevice, TuyaManufCluster
+from zhaquirks.tuya import TuyaManufCluster
 from zhaquirks.tuya.mcu import TuyaMCUCluster
 from zigpy.zcl.clusters.general import Basic, Groups, Ota, Scenes, Time
 from zigpy.zcl.clusters.measurement import IlluminanceMeasurement
@@ -34,7 +34,7 @@ class TuyaMotionCluster(TuyaMCUCluster):
     }
 
 
-class TuyaMotionSensorB8vxct9l(EnchantDevice, CustomDevice):
+class TuyaMotionSensorB8vxct9l(CustomDevice):
     """Tuya TS0601 Motion Sensor _TZE204_b8vxct9l."""
 
     signature = {
@@ -73,4 +73,4 @@ class TuyaMotionSensorB8vxct9l(EnchantDevice, CustomDevice):
         },
     }
 
-# End of Tuya TS0601 Motion Sensor (_TZE204_b8vxct9l) Custom Quirk for ZHA
+# updated for Tuya TS0601 Motion Sensor (_TZE204_b8vxct9l)
