@@ -1,6 +1,5 @@
 """Tuya TS0601 Motion Sensor (_TZE204_b8vxct9l) Custom Quirk for ZHA."""
 import math
-from typing import Dict
 
 from zigpy.profiles import zha
 from zigpy.quirks import CustomDevice
@@ -20,20 +19,16 @@ def illuminance_converter(lux_val: int) -> int:
 class TuyaMotionCluster(TuyaMCUCluster):
     """Custom Tuya MCU cluster for Motion Sensor DP mapping."""
 
-    dp_to_attribute: Dict[int, TuyaMCUCluster.TuyaDPToAttributeMapping] = {
+    dp_to_attribute = {
         # DP 1: Motion State (0 = Clear, 1 = Detected)
-        1: TuyaMCUCluster.TuyaDPToAttributeMapping(
+        1: (
             IasZone.attributes_by_name["zone_status"].id,
-            converter=lambda x: IasZone.ZoneStatus.Alarm_1 if x else 0,
-            endpoint_id=1,
-            cluster_name=IasZone.name,
+            lambda x: IasZone.ZoneStatus.Alarm_1 if x else 0,
         ),
         # DP 12: Illuminance / Lux
-        12: TuyaMCUCluster.TuyaDPToAttributeMapping(
+        12: (
             IlluminanceMeasurement.attributes_by_name["measured_value"].id,
-            converter=illuminance_converter,
-            endpoint_id=1,
-            cluster_name=IlluminanceMeasurement.name,
+            illuminance_converter,
         ),
     }
 
@@ -42,7 +37,10 @@ class TuyaMotionSensorB8vxct9l(CustomDevice):
     """Tuya TS0601 Motion Sensor _TZE204_b8vxct9l."""
 
     signature = {
-        "models_info": [("_TZE204_b8vxct9l", "TS0601")],
+        "models_info": [
+            ("_TZE204_b8vxct9l", "TS0601"),
+            ("_TZE204_b8vxct9l", ""),
+        ],
         "endpoints": {
             1: {
                 "profile_id": zha.PROFILE_ID,
@@ -51,6 +49,7 @@ class TuyaMotionSensorB8vxct9l(CustomDevice):
                     Basic.cluster_id,
                     Groups.cluster_id,
                     Scenes.cluster_id,
+                    TuyaMCUCluster.cluster_id,  # 0xEF00 (บังคับแมตช์ Signature)
                 ],
                 "output_clusters": [Time.cluster_id, Ota.cluster_id],
             }
@@ -75,5 +74,4 @@ class TuyaMotionSensorB8vxct9l(CustomDevice):
         },
     }
 
-
-# update
+# End of Tuya TS0601 Motion Sensor (_TZE204_b8vxct9l) Custom Quirk for ZHA.
