@@ -3,8 +3,8 @@ import math
 
 from zigpy.profiles import zha
 from zigpy.quirks import CustomDevice
-from zhaquirks.tuya import TuyaManufCluster
-from zhaquirks.tuya.mcu import EnchantDevice, TuyaMCUCluster
+from zhaquirks.tuya import EnchantDevice, TuyaManufCluster
+from zhaquirks.tuya.mcu import TuyaMCUCluster
 from zigpy.zcl.clusters.general import Basic, Groups, Ota, Scenes, Time
 from zigpy.zcl.clusters.measurement import IlluminanceMeasurement
 from zigpy.zcl.clusters.security import IasZone
@@ -21,7 +21,7 @@ class TuyaMotionCluster(TuyaMCUCluster):
     """Custom Tuya MCU cluster for Motion Sensor DP mapping."""
 
     dp_to_attribute = {
-        # DP 1: Motion State
+        # DP 1: Motion State (0 = Clear, 1 = Detected)
         1: (
             IasZone.attributes_by_name["zone_status"].id,
             lambda x: IasZone.ZoneStatus.Alarm_1 if x else 0,
@@ -73,4 +73,4 @@ class TuyaMotionSensorB8vxct9l(EnchantDevice, CustomDevice):
         },
     }
 
-# update 
+# End of Tuya TS0601 Motion Sensor (_TZE204_b8vxct9l) Custom Quirk for ZHA
