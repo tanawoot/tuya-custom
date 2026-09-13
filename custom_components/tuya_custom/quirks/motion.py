@@ -1,15 +1,10 @@
 """Tuya TS0601 Motion Sensor (_TZE204_b8vxct9l) Custom Quirk for ZHA."""
 import math
-from typing import Dict, Tuple, Union
+from typing import Dict
 
 from zigpy.profiles import zha
 from zigpy.quirks import CustomDevice
-from zhaquirks.tuya import TuyaLocalCluster
-from zhaquirks.tuya.mcu import (
-    DPToAttributeMapping,
-    TuyaDPType,
-    TuyaMCUCluster,
-)
+from zhaquirks.tuya.mcu import DPToAttributeMapping, TuyaMCUCluster
 from zigpy.zcl.clusters.general import Basic, Groups, Oota, Scenes, Time
 from zigpy.zcl.clusters.measurement import IlluminanceMeasurement
 from zigpy.zcl.clusters.security import IasZone
@@ -26,22 +21,22 @@ class TuyaMotionCluster(TuyaMCUCluster):
     """Custom Tuya MCU cluster for Motion Sensor DP mapping."""
 
     dp_to_attribute: Dict[int, DPToAttributeMapping] = {
-        # DP 1: Motion State (0 = Clear, 1 = Detected)
+        # DP 1: Motion State (1 = BOOL)
         1: DPToAttributeMapping(
             IasZone.attributes_by_name["zone_status"].id,
-            type=TuyaDPType.BOOL,
+            dp_type=1,
             converter=lambda x: IasZone.ZoneStatus.Alarm_1 if x else 0,
         ),
-        # DP 4: Battery Level (%)
+        # DP 4: Battery Level (2 = VALUE)
         4: DPToAttributeMapping(
             Basic.attributes_by_name["battery_percentage_remaining"].id,
-            type=TuyaDPType.VALUE,
+            dp_type=2,
             converter=lambda x: x * 2,  # ZHA uses 0-200 scale for 0-100%
         ),
-        # DP 12: Illuminance / Lux
+        # DP 12: Illuminance / Lux (2 = VALUE)
         12: DPToAttributeMapping(
             IlluminanceMeasurement.attributes_by_name["measured_value"].id,
-            type=TuyaDPType.VALUE,
+            dp_type=2,
             converter=illuminance_converter,
         ),
     }

@@ -17,13 +17,14 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     hass.data.setdefault(DOMAIN, {})
     hass.data[DOMAIN][entry.entry_id] = entry.data
 
-    # Point zhaquirks strictly to the 'quirks' subfolder to avoid importing integration files
+    # Point zhaquirks strictly to the 'quirks' subfolder
     quirks_dir = os.path.join(os.path.dirname(__file__), "quirks")
     if os.path.exists(quirks_dir):
         try:
             import zhaquirks
 
-            zhaquirks.setup(quirks_dir)
+            # ใช้ async_add_executor_job เพื่อไม่ให้ Block Event Loop ของ Home Assistant
+            await hass.async_add_executor_job(zhaquirks.setup, quirks_dir)
             _LOGGER.info("Successfully registered ZHA custom quirks from %s", quirks_dir)
         except Exception as err:
             _LOGGER.warning("Could not register ZHA custom quirk: %s", err)
