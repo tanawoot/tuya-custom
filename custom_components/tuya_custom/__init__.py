@@ -17,15 +17,16 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     hass.data.setdefault(DOMAIN, {})
     hass.data[DOMAIN][entry.entry_id] = entry.data
 
-    # Register custom ZHA quirk automatically from integration directory
-    integration_dir = os.path.dirname(__file__)
-    try:
-        import zhaquirks
+    # Point zhaquirks strictly to the 'quirks' subfolder to avoid importing integration files
+    quirks_dir = os.path.join(os.path.dirname(__file__), "quirks")
+    if os.path.exists(quirks_dir):
+        try:
+            import zhaquirks
 
-        zhaquirks.setup(integration_dir)
-        _LOGGER.info("Successfully registered ZHA custom quirks from %s", integration_dir)
-    except Exception as err:
-        _LOGGER.warning("Could not register ZHA custom quirk: %s", err)
+            zhaquirks.setup(quirks_dir)
+            _LOGGER.info("Successfully registered ZHA custom quirks from %s", quirks_dir)
+        except Exception as err:
+            _LOGGER.warning("Could not register ZHA custom quirk: %s", err)
 
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
     return True
