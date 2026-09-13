@@ -1,11 +1,8 @@
-"""Tuya TS0601 Motion Sensor (_TZE204_b8vxct9l) Custom Quirk for ZHA."""
+"""Tuya TS0601 Motion Sensor (_TZE204_b8vxct9l) Custom Quirk for ZHA (HA Core 2026+)."""
 import math
 
-from zigpy.profiles import zha
-from zigpy.quirks import CustomDevice
-from zhaquirks.tuya import TuyaManufCluster
+from zhaquirks.tuya import TuyaQuirkBuilder
 from zhaquirks.tuya.mcu import TuyaMCUCluster
-from zigpy.zcl.clusters.general import Basic, Groups, Ota, Scenes, Time
 from zigpy.zcl.clusters.measurement import IlluminanceMeasurement
 from zigpy.zcl.clusters.security import IasZone
 
@@ -22,55 +19,37 @@ class TuyaMotionCluster(TuyaMCUCluster):
 
     dp_to_attribute = {
         # DP 1: Motion State (0 = Clear, 1 = Detected)
-        1: (
+        1: TuyaMCUCluster.TuyaDPToAttributeMapping(
             IasZone.attributes_by_name["zone_status"].id,
-            lambda x: IasZone.ZoneStatus.Alarm_1 if x else 0,
+            converter=lambda x: IasZone.ZoneStatus.Alarm_1 if x else 0,
+            endpoint_id=1,
+            cluster_name=IasZone.name,
         ),
         # DP 12: Illuminance / Lux
-        12: (
+        12: TuyaMCUCluster.TuyaDPToAttributeMapping(
             IlluminanceMeasurement.attributes_by_name["measured_value"].id,
-            illuminance_converter,
+            converter=illuminance_converter,
+            endpoint_id=1,
+            cluster_name=IlluminanceMeasurement.name,
         ),
     }
 
 
-class TuyaMotionSensorB8vxct9l(CustomDevice):
-    """Tuya TS0601 Motion Sensor _TZE204_b8vxct9l."""
+(
+    TuyaQuirkBuilder("_TZE204_b8vxct9l", "TS0601")
+    .tuya_dp(
+        dp_id=1,
+        ep_attribute=IasZone.ep_attribute,
+        attribute_name="zone_status",
+        converter=lambda x: IasZone.ZoneStatus.Alarm_1 if x else 0,
+    )
+    .tuya_dp(
+        dp_id=12,
+        ep_attribute=IlluminanceMeasurement.ep_attribute,
+        attribute_name="measured_value",
+        converter=illuminance_converter,
+    )
+    .add_to_registry()
+)
 
-    signature = {
-        "models_info": [("_TZE204_b8vxct9l", "TS0601")],
-        "endpoints": {
-            1: {
-                "profile_id": zha.PROFILE_ID,
-                "device_type": zha.DeviceType.IAS_ZONE,
-                "input_clusters": [
-                    Basic.cluster_id,
-                    Groups.cluster_id,
-                    Scenes.cluster_id,
-                    IasZone.cluster_id,
-                ],
-                "output_clusters": [Time.cluster_id, Ota.cluster_id],
-            }
-        },
-    }
-
-    replacement = {
-        "endpoints": {
-            1: {
-                "profile_id": zha.PROFILE_ID,
-                "device_type": zha.DeviceType.IAS_ZONE,
-                "input_clusters": [
-                    Basic.cluster_id,
-                    Groups.cluster_id,
-                    Scenes.cluster_id,
-                    IasZone.cluster_id,
-                    IlluminanceMeasurement.cluster_id,
-                    TuyaMotionCluster,
-                    TuyaManufCluster,
-                ],
-                "output_clusters": [Time.cluster_id, Ota.cluster_id],
-            }
-        },
-    }
-
-# updated for Tuya TS0601 Motion Sensor (_TZE204_b8vxct9l)
+# update hass 2026
