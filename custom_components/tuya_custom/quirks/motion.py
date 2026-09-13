@@ -22,17 +22,13 @@ class TuyaMotionCluster(TuyaMCUCluster):
 
     dp_to_attribute: Dict[int, DPToAttributeMapping] = {
         # DP 1: Motion State (0 = Clear, 1 = Detected)
-        1: DPToAttributeMapping(
-            "zone_status",
-            endpoint_id=1,
-            cluster_name=IasZone.name,
+        1: TuyaMCUCluster.TuyaDPToAttributeMapping(
+            IasZone.attributes_by_name["zone_status"].id,
             converter=lambda x: IasZone.ZoneStatus.Alarm_1 if x else 0,
         ),
         # DP 12: Illuminance / Lux
-        12: DPToAttributeMapping(
-            "measured_value",
-            endpoint_id=1,
-            cluster_name=IlluminanceMeasurement.name,
+        12: TuyaMCUCluster.TuyaDPToAttributeMapping(
+            IlluminanceMeasurement.attributes_by_name["measured_value"].id,
             converter=illuminance_converter,
         ),
     }
