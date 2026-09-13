@@ -5,7 +5,7 @@ from typing import Dict
 from zigpy.profiles import zha
 from zigpy.quirks import CustomDevice
 from zhaquirks.tuya.mcu import DPToAttributeMapping, TuyaMCUCluster
-from zigpy.zcl.clusters.general import Basic, Groups, Oota, Scenes, Time
+from zigpy.zcl.clusters.general import Basic, Groups, Ota, Scenes, Time
 from zigpy.zcl.clusters.measurement import IlluminanceMeasurement
 from zigpy.zcl.clusters.security import IasZone
 
@@ -57,7 +57,7 @@ class TuyaMotionSensorB8vxct9l(CustomDevice):
                     Scenes.cluster_id,
                     IasZone.cluster_id,
                 ],
-                "output_clusters": [Time.cluster_id, Oota.cluster_id],
+                "output_clusters": [Time.cluster_id, Ota.cluster_id],
             }
         },
     }
@@ -75,7 +75,7 @@ class TuyaMotionSensorB8vxct9l(CustomDevice):
                     IlluminanceMeasurement.cluster_id,
                     TuyaMotionCluster,
                 ],
-                "output_clusters": [Time.cluster_id, Oota.cluster_id],
+                "output_clusters": [Time.cluster_id, Ota.cluster_id],
             }
         },
     }
