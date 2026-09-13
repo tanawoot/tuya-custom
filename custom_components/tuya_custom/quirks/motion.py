@@ -21,22 +21,19 @@ class TuyaMotionCluster(TuyaMCUCluster):
     """Custom Tuya MCU cluster for Motion Sensor DP mapping."""
 
     dp_to_attribute: Dict[int, DPToAttributeMapping] = {
-        # DP 1: Motion State (1 = BOOL)
+        # DP 1: Motion State (0 = Clear, 1 = Detected)
         1: DPToAttributeMapping(
             IasZone.attributes_by_name["zone_status"].id,
-            dp_type=1,
             converter=lambda x: IasZone.ZoneStatus.Alarm_1 if x else 0,
         ),
-        # DP 4: Battery Level (2 = VALUE)
+        # DP 4: Battery Level (%)
         4: DPToAttributeMapping(
             Basic.attributes_by_name["battery_percentage_remaining"].id,
-            dp_type=2,
             converter=lambda x: x * 2,  # ZHA uses 0-200 scale for 0-100%
         ),
-        # DP 12: Illuminance / Lux (2 = VALUE)
+        # DP 12: Illuminance / Lux
         12: DPToAttributeMapping(
             IlluminanceMeasurement.attributes_by_name["measured_value"].id,
-            dp_type=2,
             converter=illuminance_converter,
         ),
     }
