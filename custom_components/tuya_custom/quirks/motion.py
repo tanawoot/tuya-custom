@@ -26,7 +26,7 @@ from zhaquirks.tuya import NoManufacturerCluster, TuyaLocalCluster, TuyaNewManuf
 from zhaquirks.tuya.mcu import DPToAttributeMapping, TuyaAttributesCluster, TuyaMCUCluster
 
 # ==============================================================================
-# CONFIGURATION VARIABLES (ค่าที่เป็น Friendly Units สำหรับ User)
+# CONFIGURATION & USER-FRIENDLY DEFAULTS
 # ==============================================================================
 MODELS_INFO = [
     ("_TZE204_b8vxct9l", "TS0601"),
@@ -38,26 +38,37 @@ MODELS_INFO = [
     ("_TZE204_laokfqwu", "TS0601"),
 ]
 
-# Sensitivity (1 - 9)
+# Sensitivity (1-9, Default 7)
 SENSITIVITY_MIN = 1
 SENSITIVITY_MAX = 9
 SENSITIVITY_RES = 1
+SENSITIVITY_DEF = 7
 
-# Detection Range (แสดงผลเป็น เมตร: 0.0m - 9.5m)
-RANGE_MIN_M = 0.0
-RANGE_MAX_M = 9.5
-RANGE_RES_M = 0.1
+# Min Range (0.0m - 5.0m, Default 0.1m)
+MIN_RANGE_MIN_M = 0.0
+MIN_RANGE_MAX_M = 5.0
+MIN_RANGE_RES_M = 0.1
+MIN_RANGE_DEF_M = 0.1
 
-# Time Delays (แสดงผลเป็น วินาที: 0s - 200s / 0s - 2000s)
-DETECTION_DELAY_MIN_S = 0
-DETECTION_DELAY_MAX_S = 200
-DETECTION_DELAY_RES_S = 1
+# Max Range (0.5m - 9.5m, Default 5.0m)
+MAX_RANGE_MIN_M = 0.5
+MAX_RANGE_MAX_M = 9.5
+MAX_RANGE_RES_M = 0.1
+MAX_RANGE_DEF_M = 5.0
 
-FADING_TIME_MIN_S = 0
-FADING_TIME_MAX_S = 2000
-FADING_TIME_RES_S = 1
+# Detection Delay (0.0s - 10.0s, Default 0.1s)
+DET_DELAY_MIN_S = 0.0
+DET_DELAY_MAX_S = 10.0
+DET_DELAY_RES_S = 0.1
+DET_DELAY_DEF_S = 0.1
 
-# ZCL Engineering Units (31: Meters, 159: Seconds, 62: Unitless)
+# Occupancy Hold Time / Fading Time (5s - 300s, Default 30s)
+FADING_MIN_S = 5
+FADING_MAX_S = 300
+FADING_RES_S = 1
+FADING_DEF_S = 30
+
+# ZCL Engineering Units
 UNIT_METERS = 31
 UNIT_SECONDS = 159
 UNIT_NONE = 62
@@ -85,65 +96,82 @@ class TuyaIlluminanceMeasurement(IlluminanceMeasurement, TuyaLocalCluster):
 class TuyaMmwRadarSensitivity(TuyaAttributesCluster, AnalogOutput):
     """AnalogOutput cluster for radar sensitivity."""
 
+    icon = "mdi:radar"
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self._update_attribute(self.attributes_by_name["description"].id, "Radar Sensitivity")
         self._update_attribute(self.attributes_by_name["min_present_value"].id, SENSITIVITY_MIN)
         self._update_attribute(self.attributes_by_name["max_present_value"].id, SENSITIVITY_MAX)
         self._update_attribute(self.attributes_by_name["resolution"].id, SENSITIVITY_RES)
+        self._update_attribute(self.attributes_by_name["present_value"].id, SENSITIVITY_DEF)
         self._update_attribute(self.attributes_by_name["engineering_units"].id, UNIT_NONE)
 
 
 class TuyaMmwRadarMinRange(TuyaAttributesCluster, AnalogOutput):
     """AnalogOutput cluster for minimum detection distance (in Meters)."""
 
+    icon = "mdi:map-marker-distance"
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self._update_attribute(self.attributes_by_name["description"].id, "Minimum Distance")
-        self._update_attribute(self.attributes_by_name["min_present_value"].id, RANGE_MIN_M)
-        self._update_attribute(self.attributes_by_name["max_present_value"].id, RANGE_MAX_M)
-        self._update_attribute(self.attributes_by_name["resolution"].id, RANGE_RES_M)
+        self._update_attribute(self.attributes_by_name["min_present_value"].id, MIN_RANGE_MIN_M)
+        self._update_attribute(self.attributes_by_name["max_present_value"].id, MIN_RANGE_MAX_M)
+        self._update_attribute(self.attributes_by_name["resolution"].id, MIN_RANGE_RES_M)
+        self._update_attribute(self.attributes_by_name["present_value"].id, MIN_RANGE_DEF_M)
         self._update_attribute(self.attributes_by_name["engineering_units"].id, UNIT_METERS)
 
 
 class TuyaMmwRadarMaxRange(TuyaAttributesCluster, AnalogOutput):
     """AnalogOutput cluster for maximum detection distance (in Meters)."""
 
+    icon = "mdi:arrow-expand-horizontal"
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self._update_attribute(self.attributes_by_name["description"].id, "Maximum Distance")
-        self._update_attribute(self.attributes_by_name["min_present_value"].id, RANGE_MIN_M)
-        self._update_attribute(self.attributes_by_name["max_present_value"].id, RANGE_MAX_M)
-        self._update_attribute(self.attributes_by_name["resolution"].id, RANGE_RES_M)
+        self._update_attribute(self.attributes_by_name["min_present_value"].id, MAX_RANGE_MIN_M)
+        self._update_attribute(self.attributes_by_name["max_present_value"].id, MAX_RANGE_MAX_M)
+        self._update_attribute(self.attributes_by_name["resolution"].id, MAX_RANGE_RES_M)
+        self._update_attribute(self.attributes_by_name["present_value"].id, MAX_RANGE_DEF_M)
         self._update_attribute(self.attributes_by_name["engineering_units"].id, UNIT_METERS)
 
 
 class TuyaMmwRadarDetectionDelay(TuyaAttributesCluster, AnalogOutput):
     """AnalogOutput cluster for motion detection delay (in Seconds)."""
 
+    icon = "mdi:timer-sand"
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self._update_attribute(self.attributes_by_name["description"].id, "Detection Delay")
-        self._update_attribute(self.attributes_by_name["min_present_value"].id, DETECTION_DELAY_MIN_S)
-        self._update_attribute(self.attributes_by_name["max_present_value"].id, DETECTION_DELAY_MAX_S)
-        self._update_attribute(self.attributes_by_name["resolution"].id, DETECTION_DELAY_RES_S)
+        self._update_attribute(self.attributes_by_name["min_present_value"].id, DET_DELAY_MIN_S)
+        self._update_attribute(self.attributes_by_name["max_present_value"].id, DET_DELAY_MAX_S)
+        self._update_attribute(self.attributes_by_name["resolution"].id, DET_DELAY_RES_S)
+        self._update_attribute(self.attributes_by_name["present_value"].id, DET_DELAY_DEF_S)
         self._update_attribute(self.attributes_by_name["engineering_units"].id, UNIT_SECONDS)
 
 
 class TuyaMmwRadarFadingTime(TuyaAttributesCluster, AnalogOutput):
     """AnalogOutput cluster for occupancy hold time / fading time (in Seconds)."""
 
+    icon = "mdi:clock-end"
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self._update_attribute(self.attributes_by_name["description"].id, "Occupancy Hold Time")
-        self._update_attribute(self.attributes_by_name["min_present_value"].id, FADING_TIME_MIN_S)
-        self._update_attribute(self.attributes_by_name["max_present_value"].id, FADING_TIME_MAX_S)
-        self._update_attribute(self.attributes_by_name["resolution"].id, FADING_TIME_RES_S)
+        self._update_attribute(self.attributes_by_name["min_present_value"].id, FADING_MIN_S)
+        self._update_attribute(self.attributes_by_name["max_present_value"].id, FADING_MAX_S)
+        self._update_attribute(self.attributes_by_name["resolution"].id, FADING_RES_S)
+        self._update_attribute(self.attributes_by_name["present_value"].id, FADING_DEF_S)
         self._update_attribute(self.attributes_by_name["engineering_units"].id, UNIT_SECONDS)
 
 
 class TuyaMmwRadarTargetDistance(TuyaAttributesCluster, AnalogInput):
     """AnalogInput cluster for target distance (in Meters)."""
+
+    icon = "mdi:human-handsdown"
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -179,19 +207,17 @@ class TuyaMmwRadarCluster(NoManufacturerCluster, TuyaMCUCluster):
             TuyaMmwRadarSensitivity.ep_attribute,
             "present_value",
         ),
-        # แปลง cm จาก Tuya DP เป็น เมตร (m) ให้ UI
         3: DPToAttributeMapping(
             TuyaMmwRadarMinRange.ep_attribute,
             "present_value",
-            converter=lambda x: float(x) / 100.0 if x is not None else 0.0,
+            converter=lambda x: float(x) / 100.0 if x is not None else MIN_RANGE_DEF_M,
             dp_converter=lambda x: int(x * 100),
             endpoint_id=2,
         ),
-        # แปลง cm จาก Tuya DP เป็น เมตร (m) ให้ UI
         4: DPToAttributeMapping(
             TuyaMmwRadarMaxRange.ep_attribute,
             "present_value",
-            converter=lambda x: float(x) / 100.0 if x is not None else 0.0,
+            converter=lambda x: float(x) / 100.0 if x is not None else MAX_RANGE_DEF_M,
             dp_converter=lambda x: int(x * 100),
             endpoint_id=3,
         ),
@@ -199,29 +225,25 @@ class TuyaMmwRadarCluster(NoManufacturerCluster, TuyaMCUCluster):
             TuyaMCUCluster.ep_attribute,
             "self_test",
         ),
-        # แปลง Target Distance cm เป็น เมตร (m)
         9: DPToAttributeMapping(
             TuyaMmwRadarTargetDistance.ep_attribute,
             "present_value",
             converter=lambda x: float(x) / 100.0 if x is not None else 0.0,
         ),
-        # แปลง Detection Delay ms/100ms เป็น วินาที (s)
         101: DPToAttributeMapping(
             TuyaMmwRadarDetectionDelay.ep_attribute,
             "present_value",
-            converter=lambda x: float(x) / 10.0 if x is not None else 0.0,
+            converter=lambda x: float(x) / 10.0 if x is not None else DET_DELAY_DEF_S,
             dp_converter=lambda x: int(x * 10),
             endpoint_id=4,
         ),
-        # แปลง Fading Time ms/1000ms เป็น วินาที (s)
         102: DPToAttributeMapping(
             TuyaMmwRadarFadingTime.ep_attribute,
             "present_value",
-            converter=lambda x: float(x) / 10.0 if x is not None else 0.0,
+            converter=lambda x: float(x) / 10.0 if x is not None else FADING_DEF_S,
             dp_converter=lambda x: int(x * 10),
             endpoint_id=5,
         ),
-        # รับค่า Lux ตรงๆ
         103: DPToAttributeMapping(
             TuyaIlluminanceMeasurement.ep_attribute,
             "measured_value",
