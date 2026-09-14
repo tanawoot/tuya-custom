@@ -39,37 +39,31 @@ MODELS_INFO = [
     ("_TZE204_laokfqwu", "TS0601"),
 ]
 
-# Sensitivity (1-9, Default 7)
 SENSITIVITY_MIN = 1
 SENSITIVITY_MAX = 9
 SENSITIVITY_RES = 1
 SENSITIVITY_DEF = 7
 
-# Min Range (0.0m - 5.0m, Default 0.1m)
 MIN_RANGE_MIN_M = 0.0
 MIN_RANGE_MAX_M = 5.0
 MIN_RANGE_RES_M = 0.1
 MIN_RANGE_DEF_M = 0.1
 
-# Max Range (0.5m - 9.5m, Default 5.0m)
 MAX_RANGE_MIN_M = 0.5
 MAX_RANGE_MAX_M = 9.5
 MAX_RANGE_RES_M = 0.1
 MAX_RANGE_DEF_M = 5.0
 
-# Detection Delay (0.0s - 10.0s, Default 0.1s)
 DET_DELAY_MIN_S = 0.0
 DET_DELAY_MAX_S = 10.0
 DET_DELAY_RES_S = 0.1
 DET_DELAY_DEF_S = 0.1
 
-# Occupancy Hold Time / Fading Time (5s - 300s, Default 30s)
 FADING_MIN_S = 5
 FADING_MAX_S = 300
 FADING_RES_S = 1
 FADING_DEF_S = 30
 
-# ZCL Engineering Units
 UNIT_METERS = 31
 UNIT_SECONDS = 159
 UNIT_NONE = 62
@@ -99,6 +93,11 @@ class TuyaOccupancySensing(OccupancySensing, TuyaLocalCluster):
 
 class TuyaIlluminanceMeasurement(IlluminanceMeasurement, TuyaLocalCluster):
     """Tuya local IlluminanceMeasurement cluster."""
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Force init attribute เพื่อให้ ZHA ยอมสร้าง Sensor Entity
+        self._update_attribute(self.attributes_by_name["measured_value"].id, 0)
 
 
 class TuyaMmwRadarSensitivity(TuyaAttributesCluster, AnalogOutput):
@@ -208,20 +207,17 @@ class TuyaMmwRadarCluster(NoManufacturerCluster, TuyaMCUCluster):
     )
 
     dp_to_attribute: Dict[int, DPToAttributeMapping] = {
-        # Occupancy Inversion (1 -> 0, 0 -> 1)
         1: DPToAttributeMapping(
             TuyaOccupancySensing.ep_attribute,
             "occupancy",
             converter=lambda x: 0 if x == 1 else 1,
         ),
-        # Sensitivity (1-9)
         2: DPToAttributeMapping(
             TuyaMmwRadarSensitivity.ep_attribute,
             "present_value",
             converter=lambda x: int(x) if x is not None else SENSITIVITY_DEF,
             dp_converter=lambda x: int(x),
         ),
-        # Min Range (cm -> m)
         3: DPToAttributeMapping(
             TuyaMmwRadarMinRange.ep_attribute,
             "present_value",
@@ -229,7 +225,6 @@ class TuyaMmwRadarCluster(NoManufacturerCluster, TuyaMCUCluster):
             dp_converter=lambda x: int(round(x * 100)),
             endpoint_id=2,
         ),
-        # Max Range (cm -> m)
         4: DPToAttributeMapping(
             TuyaMmwRadarMaxRange.ep_attribute,
             "present_value",
@@ -237,19 +232,16 @@ class TuyaMmwRadarCluster(NoManufacturerCluster, TuyaMCUCluster):
             dp_converter=lambda x: int(round(x * 100)),
             endpoint_id=3,
         ),
-        # Self Test
         6: DPToAttributeMapping(
             TuyaMCUCluster.ep_attribute,
             "self_test",
         ),
-        # Target Distance (cm -> m) mapped to Endpoint 6
         9: DPToAttributeMapping(
             TuyaMmwRadarTargetDistance.ep_attribute,
             "present_value",
             converter=lambda x: round(float(x) / 100.0, 2) if x is not None else 0.0,
             endpoint_id=6,
         ),
-        # Detection Delay (1/10s -> s)
         101: DPToAttributeMapping(
             TuyaMmwRadarDetectionDelay.ep_attribute,
             "present_value",
@@ -257,7 +249,6 @@ class TuyaMmwRadarCluster(NoManufacturerCluster, TuyaMCUCluster):
             dp_converter=lambda x: int(round(x * 10)),
             endpoint_id=4,
         ),
-        # Occupancy Hold Time / Fading Time (Direct Seconds)
         102: DPToAttributeMapping(
             TuyaMmwRadarFadingTime.ep_attribute,
             "present_value",
@@ -265,7 +256,7 @@ class TuyaMmwRadarCluster(NoManufacturerCluster, TuyaMCUCluster):
             dp_converter=lambda x: int(x),
             endpoint_id=5,
         ),
-        # Illuminance (Lux -> ZCL Standard Logarithmic Value)
+        # DP 103 สำหรับ Illuminance
         103: DPToAttributeMapping(
             TuyaIlluminanceMeasurement.ep_attribute,
             "measured_value",
