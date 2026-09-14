@@ -199,9 +199,11 @@ class TuyaMmwRadarCluster(NoManufacturerCluster, TuyaMCUCluster):
     )
 
     dp_to_attribute: Dict[int, DPToAttributeMapping] = {
+        # สลับค่า 0 กับ 1 เพื่อให้ Detected/Clear ตรงตามความเป็นจริง
         1: DPToAttributeMapping(
             TuyaOccupancySensing.ep_attribute,
             "occupancy",
+            converter=lambda x: 0 if x == 1 else 1,
         ),
         2: DPToAttributeMapping(
             TuyaMmwRadarSensitivity.ep_attribute,
