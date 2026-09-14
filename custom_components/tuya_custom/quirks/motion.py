@@ -199,53 +199,63 @@ class TuyaMmwRadarCluster(NoManufacturerCluster, TuyaMCUCluster):
     )
 
     dp_to_attribute: Dict[int, DPToAttributeMapping] = {
-        # สลับค่า 0 กับ 1 เพื่อให้ Detected/Clear ตรงตามความเป็นจริง
+        # Occupancy Inversion (1 -> 0, 0 -> 1)
         1: DPToAttributeMapping(
             TuyaOccupancySensing.ep_attribute,
             "occupancy",
             converter=lambda x: 0 if x == 1 else 1,
         ),
+        # Sensitivity (1-9)
         2: DPToAttributeMapping(
             TuyaMmwRadarSensitivity.ep_attribute,
             "present_value",
+            converter=lambda x: int(x) if x is not None else SENSITIVITY_DEF,
+            dp_converter=lambda x: int(x),
         ),
+        # Min Range (cm -> m)
         3: DPToAttributeMapping(
             TuyaMmwRadarMinRange.ep_attribute,
             "present_value",
-            converter=lambda x: float(x) / 100.0 if x is not None else MIN_RANGE_DEF_M,
-            dp_converter=lambda x: int(x * 100),
+            converter=lambda x: round(float(x) / 100.0, 2) if x is not None else MIN_RANGE_DEF_M,
+            dp_converter=lambda x: int(round(x * 100)),
             endpoint_id=2,
         ),
+        # Max Range (cm -> m)
         4: DPToAttributeMapping(
             TuyaMmwRadarMaxRange.ep_attribute,
             "present_value",
-            converter=lambda x: float(x) / 100.0 if x is not None else MAX_RANGE_DEF_M,
-            dp_converter=lambda x: int(x * 100),
+            converter=lambda x: round(float(x) / 100.0, 2) if x is not None else MAX_RANGE_DEF_M,
+            dp_converter=lambda x: int(round(x * 100)),
             endpoint_id=3,
         ),
+        # Self Test
         6: DPToAttributeMapping(
             TuyaMCUCluster.ep_attribute,
             "self_test",
         ),
+        # Target Distance (cm -> m)
         9: DPToAttributeMapping(
             TuyaMmwRadarTargetDistance.ep_attribute,
             "present_value",
-            converter=lambda x: float(x) / 100.0 if x is not None else 0.0,
+            converter=lambda x: round(float(x) / 100.0, 2) if x is not None else 0.0,
         ),
+        # Detection Delay (1/10s -> s)
         101: DPToAttributeMapping(
             TuyaMmwRadarDetectionDelay.ep_attribute,
             "present_value",
-            converter=lambda x: float(x) / 10.0 if x is not None else DET_DELAY_DEF_S,
-            dp_converter=lambda x: int(x * 10),
+            converter=lambda x: round(float(x) / 10.0, 1) if x is not None else DET_DELAY_DEF_S,
+            dp_converter=lambda x: int(round(x * 10)),
             endpoint_id=4,
         ),
+        # Occupancy Hold Time / Fading Time (Direct Seconds)
         102: DPToAttributeMapping(
             TuyaMmwRadarFadingTime.ep_attribute,
             "present_value",
-            converter=lambda x: float(x) / 10.0 if x is not None else FADING_DEF_S,
-            dp_converter=lambda x: int(x * 10),
+            converter=lambda x: int(x) if x is not None else FADING_DEF_S,
+            dp_converter=lambda x: int(x),
             endpoint_id=5,
         ),
+        # Illuminance
         103: DPToAttributeMapping(
             TuyaIlluminanceMeasurement.ep_attribute,
             "measured_value",
