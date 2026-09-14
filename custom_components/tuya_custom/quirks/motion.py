@@ -193,6 +193,8 @@ class TuyaMmwRadarCluster(NoManufacturerCluster, TuyaMCUCluster):
         9: DPToAttributeMapping(
             TuyaMmwRadarTargetDistance.ep_attribute,
             "present_value",
+            converter=lambda x: float(x) / 100.0,
+            endpoint_id=6,
         ),
         101: DPToAttributeMapping(
             TuyaMmwRadarDetectionDelay.ep_attribute,
@@ -211,7 +213,7 @@ class TuyaMmwRadarCluster(NoManufacturerCluster, TuyaMCUCluster):
         103: DPToAttributeMapping(
             TuyaIlluminanceMeasurement.ep_attribute,
             "measured_value",
-            converter=lambda x: int(math.log10(x) * 10000 + 1) if x and x > 0 else 1,
+            converter=lambda x: int(10000 * math.log10(x) + 1) if x and x > 1 else (0 if x == 0 else 1),
         ),
     }
 
@@ -266,7 +268,6 @@ class TuyaMmwRadarOccupancy(CustomDevice):
                     TuyaMmwRadarCluster,
                     TuyaIlluminanceMeasurement,
                     TuyaOccupancySensing,
-                    TuyaMmwRadarTargetDistance,
                     TuyaMmwRadarSensitivity,
                 ],
                 OUTPUT_CLUSTERS: [Time.cluster_id, Ota.cluster_id],
@@ -303,5 +304,15 @@ class TuyaMmwRadarOccupancy(CustomDevice):
                 ],
                 OUTPUT_CLUSTERS: [],
             },
+            6: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.COMBINED_INTERFACE,
+                INPUT_CLUSTERS: [
+                    TuyaMmwRadarTargetDistance,
+                ],
+                OUTPUT_CLUSTERS: [],
+            },
         }
     }
+
+# update
