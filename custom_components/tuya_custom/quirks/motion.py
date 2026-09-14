@@ -1,4 +1,5 @@
 """Tuya mmWave Radar Custom Quirk for ZHA."""
+import math
 from typing import Dict
 
 from zigpy.profiles import zgp, zha
@@ -73,6 +74,13 @@ UNIT_METERS = 31
 UNIT_SECONDS = 159
 UNIT_NONE = 62
 # ==============================================================================
+
+
+def lux_to_zcl(lux: float) -> int:
+    """Convert Lux value to ZCL Illuminance Measurement format."""
+    if lux is None or lux <= 0:
+        return 0
+    return int(10000 * math.log10(lux) + 1)
 
 
 class TuyaMmwRadarSelfTest(t.enum8):
@@ -176,6 +184,7 @@ class TuyaMmwRadarTargetDistance(TuyaAttributesCluster, AnalogInput):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self._update_attribute(self.attributes_by_name["description"].id, "Target Distance")
+        self._update_attribute(self.attributes_by_name["present_value"].id, 0.0)
         self._update_attribute(self.attributes_by_name["engineering_units"].id, UNIT_METERS)
 
 
@@ -233,11 +242,12 @@ class TuyaMmwRadarCluster(NoManufacturerCluster, TuyaMCUCluster):
             TuyaMCUCluster.ep_attribute,
             "self_test",
         ),
-        # Target Distance (cm -> m)
+        # Target Distance (cm -> m) mapped to Endpoint 6
         9: DPToAttributeMapping(
             TuyaMmwRadarTargetDistance.ep_attribute,
             "present_value",
             converter=lambda x: round(float(x) / 100.0, 2) if x is not None else 0.0,
+            endpoint_id=6,
         ),
         # Detection Delay (1/10s -> s)
         101: DPToAttributeMapping(
@@ -255,11 +265,11 @@ class TuyaMmwRadarCluster(NoManufacturerCluster, TuyaMCUCluster):
             dp_converter=lambda x: int(x),
             endpoint_id=5,
         ),
-        # Illuminance
+        # Illuminance (Lux -> ZCL Standard Logarithmic Value)
         103: DPToAttributeMapping(
             TuyaIlluminanceMeasurement.ep_attribute,
             "measured_value",
-            converter=lambda x: int(x) if x is not None else 0,
+            converter=lux_to_zcl,
         ),
     }
 
@@ -315,7 +325,6 @@ class TuyaMmwRadarOccupancy(CustomDevice):
                     TuyaIlluminanceMeasurement,
                     TuyaOccupancySensing,
                     TuyaMmwRadarSensitivity,
-                    TuyaMmwRadarTargetDistance,
                 ],
                 OUTPUT_CLUSTERS: [Time.cluster_id, Ota.cluster_id],
             },
@@ -348,6 +357,14 @@ class TuyaMmwRadarOccupancy(CustomDevice):
                 DEVICE_TYPE: zha.DeviceType.COMBINED_INTERFACE,
                 INPUT_CLUSTERS: [
                     TuyaMmwRadarFadingTime,
+                ],
+                OUTPUT_CLUSTERS: [],
+            },
+            6: {
+                PROFILE_ID: zha.PROFILE_ID,
+                DEVICE_TYPE: zha.DeviceType.COMBINED_INTERFACE,
+                INPUT_CLUSTERS: [
+                    TuyaMmwRadarTargetDistance,
                 ],
                 OUTPUT_CLUSTERS: [],
             },
