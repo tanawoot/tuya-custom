@@ -1,4 +1,4 @@
-"""Tuya Custom Integration with Lock, Remote, and ZHA Custom Quirk Support."""
+"""Tuya Custom Integration with Lock and ZHA Custom Quirk Support."""
 import logging
 import os
 
@@ -9,8 +9,6 @@ from homeassistant.core import HomeAssistant
 from .const import DOMAIN
 
 _LOGGER = logging.getLogger(__name__)
-
-# เพิ่ม Platform.REMOTE สำหรับ Tuya WiFi IR Remote
 PLATFORMS: list[Platform] = [
     Platform.LOCK,
     Platform.REMOTE,
